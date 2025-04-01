@@ -1,0 +1,1099 @@
+ONE
+
+#include <iostream>
+#include <limits.h> // For INT_MAX
+using namespace std;
+
+class Dijkstra {
+    int n, cost[10][10], distance[10], parent[10], visited[10];
+
+public:
+    void readMatrix();
+    void findShortestPath(int src);
+    void display(int src);
+};
+
+void Dijkstra::readMatrix() {
+    cout << "Enter the number of vertices: ";
+    cin >> n;
+
+    cout << "Enter the cost adjacency matrix (Enter 999 for no direct path):\n";
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            cin >> cost[i][j];
+}
+
+void Dijkstra::findShortestPath(int src) {
+    for (int i = 0; i < n; i++) {
+        distance[i] = cost[src][i]; // Initialize distances
+        parent[i] = src;  // Initially, parent of all nodes is the source
+        visited[i] = 0;
+    }
+    visited[src] = 1; // Mark source as visited
+
+    for (int i = 1; i < n; i++) {
+        int min = 999, u = -1;
+
+        // Find the nearest unvisited vertex
+        for (int j = 0; j < n; j++) {
+            if (!visited[j] && distance[j] < min) {
+                min = distance[j];
+                u = j;
+            }
+        }
+
+        if (u == -1) break; // No more reachable nodes
+        visited[u] = 1;
+
+        // Update distances
+        for (int v = 0; v < n; v++) {
+            if (!visited[v] && cost[u][v] != 999 && (distance[u] + cost[u][v] < distance[v])) {
+                distance[v] = distance[u] + cost[u][v];
+                parent[v] = u;
+            }
+        }
+    }
+}
+
+void Dijkstra::display(int src) {
+    cout << "\nShortest Paths from Source " << src << ":\n";
+    for (int i = 0; i < n; i++) {
+        if (i == src) continue;
+        cout << "To " << i << " - Distance: " << distance[i] << " | Path: " << i;
+
+        int j = i;
+        while (parent[j] != src) {
+            cout << " <- " << parent[j];
+            j = parent[j];
+        }
+        cout << " <- " << src << endl;
+    }
+}
+
+int main() {
+    Dijkstra dij;
+    dij.readMatrix();
+    
+    int source;
+    cout << "Enter the source vertex: ";
+    cin >> source;
+
+    dij.findShortestPath(source);
+    dij.display(source);
+
+    return 0;
+}
+
+1.txt (Dijkstra's Algorithm)
+bash
+Copy
+# Sample Input:
+Enter number of vertices: 4
+Enter cost adjacency matrix:
+0 4 999 5
+4 0 2 999
+999 2 0 3
+5 999 3 0
+Enter source vertex: 0
+
+# Output:
+Shortest Paths from Source 0:
+To 1 - Distance: 4 | Path: 1 <- 0
+To 2 - Distance: 6 | Path: 2 <- 1 <- 0
+To 3 - Distance: 5 | Path: 3 <- 0
+
+
+SECOND 
+
+#include <stdio.h>
+#include <string.h>
+
+#define POLY "10001000000100001"  // 17-bit CRC Polynomial
+#define CRC_LEN 16
+
+void computeCRC(char data[], char crc[]) {
+    char temp[120];  
+    strcpy(temp, data);
+    strcat(temp, "0000000000000000");  // Append 16 zeros
+
+    for (int i = 0; i < strlen(data); i++) {
+        if (temp[i] == '1') {  // Perform XOR if the leftmost bit is 1
+            for (int j = 0; j < CRC_LEN + 1; j++)
+                temp[i + j] = (temp[i + j] == POLY[j]) ? '0' : '1';
+        }
+    }
+    strncpy(crc, temp + strlen(data), CRC_LEN);
+    crc[CRC_LEN] = '\0';  // Null-terminate
+}
+
+int checkCRC(char frame[]) {
+    char receivedCRC[CRC_LEN + 1];
+    computeCRC(frame, receivedCRC);
+    return strcmp(receivedCRC, "0000000000000000") == 0;  // If all zeros, no error
+}
+
+int main() {
+    char data[100], crc[CRC_LEN + 1], frame[120];
+
+    printf("Enter binary data: ");
+    scanf("%s", data);
+
+    computeCRC(data, crc);
+    strcpy(frame, data);
+    strcat(frame, crc);
+
+    printf("\nTransmitted Frame: %s\n", frame);
+
+    printf("\nEnter received frame: ");
+    scanf("%s", frame);
+
+    if (checkCRC(frame))
+        printf("Frame is ERROR-FREE\n");
+    else
+        printf("Frame has ERRORS!\n");
+
+    return 0;
+}
+2.txt (CRC Check)
+Input:
+
+bash
+Copy
+Enter binary data: 1101011011  
+Enter received frame: 110101101110010101  
+Output:
+
+bash
+Copy
+Transmitted Frame: 110101101110010101  
+Frame is ERROR-FREE  
+
+THIRD 
+
+#include <stdio.h>
+#include <limits.h>
+
+#define MAX_NODES 10
+#define INFINITY INT_MAX
+
+struct Node {
+    int distance[MAX_NODES];
+    int next_hop[MAX_NODES];
+};
+
+void initialize(struct Node nodes[], int num_nodes, int cost_matrix[][MAX_NODES]) {
+    for (int i = 0; i < num_nodes; i++) {
+        for (int j = 0; j < num_nodes; j++) {
+            if (i == j) {
+                nodes[i].distance[j] = 0;
+                nodes[i].next_hop[j] = j;
+            } else if (cost_matrix[i][j] > 0) {
+                nodes[i].distance[j] = cost_matrix[i][j];
+                nodes[i].next_hop[j] = j;
+            } else {
+                nodes[i].distance[j] = INFINITY;
+                nodes[i].next_hop[j] = -1;
+            }
+        }
+    }
+}
+
+void update_routing_table(struct Node nodes[], int num_nodes, int node) {
+    int updated = 1;
+    while (updated) {
+        updated = 0;
+        for (int dest = 0; dest < num_nodes; dest++) {
+            if (dest == node) continue;
+            
+            for (int neighbor = 0; neighbor < num_nodes; neighbor++) {
+                if (nodes[node].distance[neighbor] == INFINITY || neighbor == node) continue;
+                
+                int new_distance = nodes[node].distance[neighbor] + nodes[neighbor].distance[dest];
+                
+                if (new_distance < nodes[node].distance[dest]) {
+                    nodes[node].distance[dest] = new_distance;
+                    nodes[node].next_hop[dest] = neighbor;
+                    updated = 1;
+                }
+            }
+        }
+    }
+}
+
+void print_routing_table(struct Node nodes[], int num_nodes, int node) {
+    printf("\nRouting table for Node %d:\n", node);
+    printf("Destination\tDistance\tNext Hop\n");
+    for (int i = 0; i < num_nodes; i++) {
+        if (nodes[node].distance[i] == INFINITY) {
+            printf("%d\t\t∞\t\t-\n", i);
+        } else {
+            printf("%d\t\t%d\t\t%d\n", i, nodes[node].distance[i], nodes[node].next_hop[i]);
+        }
+    }
+}
+
+int main() {
+    int num_nodes;
+    printf("Enter number of nodes: ");
+    scanf("%d", &num_nodes);
+
+    int cost_matrix[MAX_NODES][MAX_NODES];
+    printf("Enter cost matrix (use 0 for no direct connection):\n");
+    for (int i = 0; i < num_nodes; i++) {
+        for (int j = 0; j < num_nodes; j++) {
+            scanf("%d", &cost_matrix[i][j]);
+            if (cost_matrix[i][j] == 0 && i != j) {
+                cost_matrix[i][j] = INFINITY;
+            }
+        }
+    }
+
+    struct Node nodes[MAX_NODES];
+    initialize(nodes, num_nodes, cost_matrix);
+
+    // Simulate distance vector updates
+    for (int i = 0; i < num_nodes; i++) {
+        update_routing_table(nodes, num_nodes, i);
+    }
+
+    // Print final routing tables
+    for (int i = 0; i < num_nodes; i++) {
+        print_routing_table(nodes, num_nodes, i);
+    }
+
+    return 0;
+}
+3.txt (Distance Vector Routing)
+Input:
+
+bash
+Copy
+Enter number of nodes: 3  
+Cost matrix:  
+0 2 5  
+2 0 1  
+5 1 0  
+Output:
+
+bash
+Copy
+Routing table for Node 0:  
+Destination    Distance    Next Hop  
+1              2           1  
+2              3           1  
+
+FOURTH 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+int main() {
+    int server_fd, new_socket;
+    struct sockaddr_in address;
+    int opt = 1;
+    int addrlen = sizeof(address);
+    char buffer[BUFFER_SIZE] = {0};
+    
+    // Create socket file descriptor
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Set socket options
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
+    
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+    
+    // Bind socket to port
+    if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+   
+    // Listen for connections
+    if (listen(server_fd, 3) < 0) {
+        perror("listen");
+        exit(EXIT_FAILURE);
+    }
+    
+    printf("Server listening on port %d...\n", PORT);
+    
+    // Accept incoming connection
+    if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
+        perror("accept");
+        exit(EXIT_FAILURE);
+    }
+    
+    // Read filename from client
+    read(new_socket, buffer, BUFFER_SIZE);
+    printf("Requested file: %s\n", buffer);
+    
+    // Try to open the file
+    FILE *file = fopen(buffer, "r");
+    if (file == NULL) {
+        char *error_msg = "File not found";
+        send(new_socket, error_msg, strlen(error_msg), 0);
+        printf("File not found\n");
+    } else {
+        // Read file contents and send to client
+        char file_buffer[BUFFER_SIZE];
+        size_t bytes_read;
+        
+        while ((bytes_read = fread(file_buffer, 1, BUFFER_SIZE, file)) > 0) {
+            send(new_socket, file_buffer, bytes_read, 0);
+        }
+        
+        fclose(file);
+        printf("File sent successfully\n");
+    }
+    
+    close(new_socket);
+    close(server_fd);
+    return 0;
+}
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+int main() {
+    int sock = 0;
+    struct sockaddr_in serv_addr;
+    char filename[BUFFER_SIZE] = {0};
+    char buffer[BUFFER_SIZE] = {0};
+    
+    // Create socket
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("\n Socket creation error \n");
+        return -1;
+    }
+    
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+    
+    // Convert IPv4 address from text to binary form
+    if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+    
+    // Connect to server
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        printf("\nConnection Failed \n");
+        return -1;
+    }
+    
+    printf("Enter filename: ");
+    fgets(filename, BUFFER_SIZE, stdin);
+    filename[strcspn(filename, "\n")] = 0; // Remove newline
+    
+    // Send filename to server
+    send(sock, filename, strlen(filename), 0);
+    printf("Request sent\n");
+    
+    // Receive file contents or error message
+    printf("File contents:\n");
+    while (1) {
+        int valread = read(sock, buffer, BUFFER_SIZE - 1);
+        if (valread <= 0) break;
+        
+        buffer[valread] = '\0';
+        printf("%s", buffer);
+    }
+    printf("\n");
+    
+    close(sock);
+    return 0;
+}
+
+ 4.txt (TCP File Transfer)
+Server Output:
+
+bash
+Copy
+Requested file: data.txt  
+File sent successfully  
+Client Input/Output:
+
+bash
+Copy
+Enter filename: data.txt  
+File contents:  
+Hello, this is sample data.  
+
+
+FIFTH
+
+#include <stdio.h>
+
+int h[12];
+
+void generateHammingCode();
+void introduceError();
+void correctError();
+
+int main() {
+    int i, choice;
+
+    // Input message bits
+    printf("\nEnter the 7-bit message: ");
+    for (i = 1; i < 12; i++)
+        if (i == 3 || i == 5 || i == 6 || i == 7 || i == 9 || i == 10 || i == 11)
+            scanf("%d", &h[i]);
+
+    generateHammingCode();
+
+    printf("\nDo you want to introduce an error? (1 for Yes, 0 for No): ");
+    scanf("%d", &choice);
+
+    if (choice)
+        introduceError();
+
+    correctError();
+    
+    return 0;
+}
+
+// Generate Hamming code by calculating parity bits
+void generateHammingCode() {
+    int i;
+
+    h[1] = (h[3] + h[5] + h[7] + h[9] + h[11]) % 2;
+    h[2] = (h[3] + h[6] + h[7] + h[10] + h[11]) % 2;
+    h[4] = (h[5] + h[6] + h[7]) % 2;
+    h[8] = (h[9] + h[10] + h[11]) % 2;
+
+    printf("\nTransmitted Hamming Code: ");
+    for (i = 1; i < 12; i++)
+        printf("%d ", h[i]);
+    printf("\n");
+}
+
+// Introduce an error at a random position
+void introduceError() {
+    int pos;
+    printf("\nEnter the bit position (1-11) to introduce an error: ");
+    scanf("%d", &pos);
+    
+    if (pos < 1 || pos > 11) {
+        printf("\nInvalid position!\n");
+        return;
+    }
+
+    h[pos] ^= 1; // Flip the bit
+    printf("\nCorrupted Hamming Code: ");
+    for (int i = 1; i < 12; i++)
+        printf("%d ", h[i]);
+    printf("\n");
+}
+
+// Correct errors using Hamming Code parity checks
+void correctError() {
+    int errorPos = 0;
+
+    errorPos += (h[1] != (h[3] + h[5] + h[7] + h[9] + h[11]) % 2) * 1;
+    errorPos += (h[2] != (h[3] + h[6] + h[7] + h[10] + h[11]) % 2) * 2;
+    errorPos += (h[4] != (h[5] + h[6] + h[7]) % 2) * 4;
+    errorPos += (h[8] != (h[9] + h[10] + h[11]) % 2) * 8;
+
+    if (errorPos) {
+        printf("\nError detected at position: %d", errorPos);
+        h[errorPos] ^= 1;  // Correct the error by flipping the bit
+        printf("\nCorrected Hamming Code: ");
+        for (int i = 1; i < 12; i++)
+            printf("%d ", h[i]);
+    } else {
+        printf("\nNo error detected.");
+    }
+
+    printf("\n");
+}
+5.txt (Hamming Code)
+Input:
+
+bash
+Copy
+Enter the 7-bit message: 1 0 1 1 0 1 0  
+Introduce error? 1  
+Position: 4  
+Output:
+
+bash
+Copy
+Transmitted Hamming Code: 1 0 1 1 0 1 0 ...  
+Corrupted Hamming Code: 1 0 1 0 0 1 0 ...  
+Corrected Hamming Code: 1 0 1 1 0 1 0 ...  
+
+
+SIXTH
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 17000
+#define BUFFER_SIZE 1024
+
+int main() {
+    int server_sock, client_sock;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_size;
+    char frame[BUFFER_SIZE], ack[BUFFER_SIZE];
+    int i = 1;
+
+    // Create socket
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_sock == -1) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configure server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+
+    // Bind socket
+    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Binding failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen for connections
+    if (listen(server_sock, 5) == -1) {
+        perror("Listening failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Waiting for connection...\n");
+
+    // Accept connection
+    addr_size = sizeof(client_addr);
+    client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_size);
+    if (client_sock == -1) {
+        perror("Connection failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Connected to receiver.\n");
+
+    // Send frames
+    while (1) {
+        printf("Enter Frame %d (type 'exit' to stop): ", i);
+        scanf("%s", frame);
+
+        send(client_sock, frame, strlen(frame), 0);
+        if (strcmp(frame, "exit") == 0)
+            break;
+
+        recv(client_sock, ack, BUFFER_SIZE, 0);
+        printf("Acknowledgment: %s\n", ack);
+
+        i++;
+    }
+
+    close(client_sock);
+    close(server_sock);
+    return 0;
+}
+
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 17000
+#define BUFFER_SIZE 1024
+
+int main() {
+    int sock;
+    struct sockaddr_in server_addr;
+    char frame[BUFFER_SIZE], ack[BUFFER_SIZE];
+    int i = 1;
+
+    // Create socket
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == -1) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configure server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    // Connect to server
+    if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Connection failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Connected to sender.\n");
+
+    // Receive frames
+    while (1) {
+        recv(sock, frame, BUFFER_SIZE, 0);
+        frame[strlen(frame)] = '\0';
+
+        if (strcmp(frame, "exit") == 0)
+            break;
+
+        printf("Frame %d received: %s\n", i, frame);
+
+        // Send acknowledgment
+        strcpy(ack, "ACK");
+        send(sock, ack, strlen(ack), 0);
+
+        i++;
+    }
+
+    close(sock);
+    return 0;
+}
+6.txt (TCP Frame Transfer)
+Server Input:
+
+bash
+Copy
+Enter Frame 1: Hello  
+Enter Frame 2: exit  
+Client Output:
+
+bash
+Copy
+Frame 1 received: Hello  
+
+SEVENTH
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#define FIFO1 "fifo1"
+#define FIFO2 "fifo2"
+
+int main() {
+    char filename[100], fileContent[3000];
+    int fd1, fd2, file_fd;
+    ssize_t numBytes;
+    
+    // Create FIFOs if they don’t exist
+    mkfifo(FIFO1, 0666);
+    mkfifo(FIFO2, 0666);
+
+    printf("SERVER ONLINE\nWaiting for client request...\n");
+
+    // Open FIFO for reading
+    fd1 = open(FIFO1, O_RDONLY);
+    if (fd1 == -1) {
+        perror("Error opening FIFO1");
+        exit(1);
+    }
+
+    // Read filename from FIFO1
+    numBytes = read(fd1, filename, sizeof(filename));
+    if (numBytes <= 0) {
+        perror("Error reading from FIFO1");
+        exit(1);
+    }
+    filename[numBytes] = '\0';
+
+    // Open the requested file
+    file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0) {
+        perror("File not found");
+        exit(1);
+    }
+
+    printf("Server: File '%s' found. Transferring contents...\n", filename);
+
+    // Read file content
+    numBytes = read(file_fd, fileContent, sizeof(fileContent) - 1);
+    fileContent[numBytes] = '\0';
+
+    // Send file content to client via FIFO2
+    fd2 = open(FIFO2, O_WRONLY);
+    write(fd2, fileContent, strlen(fileContent));
+
+    printf("Server: File transfer completed.\n");
+
+    // Close all file descriptors
+    close(fd1);
+    close(fd2);
+    close(file_fd);
+
+    return 0;
+}
+
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#define FIFO1 "fifo1"
+#define FIFO2 "fifo2"
+
+int main() {
+    char filename[100], fileContent[3000];
+    int fd1, fd2;
+    ssize_t numBytes;
+
+    printf("Waiting for server...\n");
+
+    // Open FIFO1 for writing
+    fd1 = open(FIFO1, O_WRONLY);
+    if (fd1 == -1) {
+        perror("Error opening FIFO1");
+        exit(1);
+    }
+
+    // Get the filename from user
+    printf("SERVER ONLINE!\nEnter the filename: ");
+    fgets(filename, sizeof(filename), stdin);
+    filename[strcspn(filename, "\n")] = '\0'; // Remove newline character
+
+    // Send filename to server
+    write(fd1, filename, strlen(filename));
+
+    // Open FIFO2 for reading
+    fd2 = open(FIFO2, O_RDONLY);
+    if (fd2 == -1) {
+        perror("Error opening FIFO2");
+        exit(1);
+    }
+
+    // Read file contents from server
+    numBytes = read(fd2, fileContent, sizeof(fileContent) - 1);
+    fileContent[numBytes] = '\0';
+
+    printf("File received! Displaying contents:\n%s\n", fileContent);
+
+    // Close FIFOs
+    close(fd1);
+    close(fd2);
+
+    return 0;
+}
+7.txt (FIFO File Transfer)
+Client Input:
+
+bash
+Copy
+SERVER ONLINE!  
+Enter filename: data.txt  
+Server Output:
+
+bash
+Copy
+File 'data.txt' found. Transferring contents...  
+Client Output:
+
+bash
+Copy
+File received:  
+Hello, this is sample data.  
+
+
+EIGHTH
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+int main() {
+    int sockfd;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len;
+    char buffer[BUFFER_SIZE];
+
+    // Create UDP socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configure server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(PORT);
+
+    // Bind the socket
+    if (bind(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+        perror("Binding failed");
+        close(sockfd);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server listening on port %d...\n", PORT);
+    
+    client_len = sizeof(client_addr);
+
+    // Receive filename from client
+    recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&client_addr, &client_len);
+    buffer[strcspn(buffer, "\n")] = 0; // Remove newline character
+
+    printf("Client requested file: %s\n", buffer);
+
+    // Open file and send contents
+    FILE *file = fopen(buffer, "r");
+    if (!file) {
+        perror("File not found");
+        sendto(sockfd, "ERROR: File not found", 22, 0, (struct sockaddr*)&client_addr, client_len);
+    } else {
+        while (fgets(buffer, BUFFER_SIZE, file)) {
+            sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr*)&client_addr, client_len);
+        }
+        sendto(sockfd, "END", 3, 0, (struct sockaddr*)&client_addr, client_len); // Indicate end of transmission
+        printf("File sent successfully.\n");
+        fclose(file);
+    }
+
+    close(sockfd);
+    return 0;
+}
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+
+#define SERVER_IP "127.0.0.1"
+#define PORT 8080
+#define BUFFER_SIZE 1024
+
+int main() {
+    int sockfd;
+    struct sockaddr_in server_addr;
+    socklen_t addr_len;
+    char buffer[BUFFER_SIZE];
+
+    // Create UDP socket
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Configure server address
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(PORT);
+    server_addr.sin_addr.s_addr = inet_addr(SERVER_IP);
+
+    // Get filename from user
+    printf("Enter filename to request: ");
+    fgets(buffer, BUFFER_SIZE, stdin);
+    buffer[strcspn(buffer, "\n")] = 0; // Remove newline character
+
+    // Send filename to server
+    sendto(sockfd, buffer, strlen(buffer), 0, (struct sockaddr*)&server_addr, sizeof(server_addr));
+
+    printf("Waiting for file contents...\n");
+
+    addr_len = sizeof(server_addr);
+    while (1) {
+        int bytes_received = recvfrom(sockfd, buffer, BUFFER_SIZE, 0, (struct sockaddr*)&server_addr, &addr_len);
+        if (bytes_received < 0) {
+            perror("Error receiving file");
+            break;
+        }
+        buffer[bytes_received] = '\0';
+
+        if (strcmp(buffer, "END") == 0) {
+            break;
+        }
+
+        printf("%s", buffer);
+    }
+
+    printf("\nFile transfer complete.\n");
+
+    close(sockfd);
+    return 0;
+}
+8.txt (UDP File Transfer)
+Client Input:
+
+bash
+Copy
+Enter filename: notes.txt  
+Server Output:
+
+bash
+Copy
+File sent successfully.  
+Client Output:
+
+bash
+Copy
+File contents:  
+This is a secret message.  
+
+
+NINETH 
+
+#include <stdio.h>
+
+#define MIN(x, y) ((x) < (y) ? (x) : (y)) // Macro to find min value
+
+int main() {
+    int bucket_size, output_rate, num_seconds, packets, i;
+    int current_load = 0, dropped = 0;
+
+    printf("LEAKY BUCKET ALGORITHM\n");
+    printf("Enter bucket size: ");
+    scanf("%d", &bucket_size);
+    printf("Enter output rate: ");
+    scanf("%d", &output_rate);
+    printf("Enter number of seconds to simulate: ");
+    scanf("%d", &num_seconds);
+
+    printf("\n(SECOND)  (PACKETS RECVD)  (PACKETS SENT)  (PACKETS LEFT)  (PACKETS DROPPED)\n");
+
+    for (i = 1; i <= num_seconds; i++) {
+        printf("Enter number of packets at second %d: ", i);
+        scanf("%d", &packets);
+
+        // Add packets to the bucket
+        current_load += packets;
+
+        // If overflow occurs, drop excess packets
+        if (current_load > bucket_size) {
+            dropped = current_load - bucket_size;
+            current_load = bucket_size;
+        } else {
+            dropped = 0;
+        }
+
+        // Send packets according to output rate
+        int sent = MIN(current_load, output_rate);
+        current_load -= sent;
+
+        // Display bucket status
+        printf("(%d)         (%d)               (%d)              (%d)              (%d)\n", i, packets, sent, current_load, dropped);
+    }
+
+    // Process remaining packets in the bucket
+    while (current_load > 0) {
+        int sent = MIN(current_load, output_rate);
+        current_load -= sent;
+        i++;
+        printf("(%d)         (0)               (%d)              (%d)              (0)\n", i, sent, current_load);
+    }
+
+    return 0;
+}
+9.txt (Leaky Bucket)
+Input:
+
+bash
+Copy
+Bucket size: 10  
+Output rate: 3  
+Seconds: 3  
+Packets at second 1: 5  
+Packets at second 2: 7  
+Packets at second 3: 4  
+Output:
+
+bash
+Copy
+(1)  (5)  (3)  (2)  (0)  
+(2)  (7)  (3)  (6)  (0)  
+(3)  (4)  (3)  (7)  (0)  
+...  
+
+
+TENTH
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+
+int main() {
+    char hostname[100];
+    struct hostent *host;
+    struct in_addr **addr_list;
+
+    // Get domain name from user
+    printf("Enter domain name: ");
+    scanf("%s", hostname);
+
+    // Get host details
+    host = gethostbyname(hostname);
+    if (host == NULL) {
+        printf("DNS resolution failed! Domain not found.\n");
+        return 1;
+    }
+
+    // Print IP addresses
+    printf("IP Address(es) for %s:\n", hostname);
+    addr_list = (struct in_addr **)host->h_addr_list;
+    
+    for (int i = 0; addr_list[i] != NULL; i++) {
+        printf(" - %s\n", inet_ntoa(*addr_list[i]));
+    }
+
+    return 0;
+}
+10. 10.txt (DNS Resolver)
+Input:
+
+bash
+Copy
+Enter domain name: google.com  
+Output:
+
+bash
+Copy
+IP Address(es) for google.com:  
+ - 142.250.190.14  
+ - 2404:6800:4007:811::200e 

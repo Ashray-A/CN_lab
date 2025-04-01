@@ -1,0 +1,62 @@
+#include <stdio.h>
+#include <string.h>
+
+#define POLY "10001000000100001"  // 17-bit CRC Polynomial
+#define CRC_LEN 16
+
+void computeCRC(char data[], char crc[]) {
+    char temp[120];  
+    strcpy(temp, data);
+    strcat(temp, "0000000000000000");  // Append 16 zeros
+
+    for (int i = 0; i < strlen(data); i++) {
+        if (temp[i] == '1') {  // Perform XOR if the leftmost bit is 1
+            for (int j = 0; j < CRC_LEN + 1; j++)
+                temp[i + j] = (temp[i + j] == POLY[j]) ? '0' : '1';
+        }
+    }
+    strncpy(crc, temp + strlen(data), CRC_LEN);
+    crc[CRC_LEN] = '\0';  // Null-terminate
+}
+
+int checkCRC(char frame[]) {
+    char receivedCRC[CRC_LEN + 1];
+    computeCRC(frame, receivedCRC);
+    return strcmp(receivedCRC, "0000000000000000") == 0;  // If all zeros, no error
+}
+
+int main() {
+    char data[100], crc[CRC_LEN + 1], frame[120];
+
+    printf("Enter binary data: ");
+    scanf("%s", data);
+
+    computeCRC(data, crc);
+    strcpy(frame, data);
+    strcat(frame, crc);
+
+    printf("\nTransmitted Frame: %s\n", frame);
+
+    printf("\nEnter received frame: ");
+    scanf("%s", frame);
+
+    if (checkCRC(frame))
+        printf("Frame is ERROR-FREE\n");
+    else
+        printf("Frame has ERRORS!\n");
+
+    return 0;
+}
+2.txt (CRC Check)
+Input:
+
+bash
+Copy
+Enter binary data: 1101011011  
+Enter received frame: 110101101110010101  
+Output:
+
+bash
+Copy
+Transmitted Frame: 110101101110010101  
+Frame is ERROR-FREE  

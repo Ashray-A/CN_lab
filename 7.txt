@@ -1,0 +1,138 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#define FIFO1 "fifo1"
+#define FIFO2 "fifo2"
+
+int main() {
+    char filename[100], fileContent[3000];
+    int fd1, fd2, file_fd;
+    ssize_t numBytes;
+    
+    // Create FIFOs if they don’t exist
+    mkfifo(FIFO1, 0666);
+    mkfifo(FIFO2, 0666);
+
+    printf("SERVER ONLINE\nWaiting for client request...\n");
+
+    // Open FIFO for reading
+    fd1 = open(FIFO1, O_RDONLY);
+    if (fd1 == -1) {
+        perror("Error opening FIFO1");
+        exit(1);
+    }
+
+    // Read filename from FIFO1
+    numBytes = read(fd1, filename, sizeof(filename));
+    if (numBytes <= 0) {
+        perror("Error reading from FIFO1");
+        exit(1);
+    }
+    filename[numBytes] = '\0';
+
+    // Open the requested file
+    file_fd = open(filename, O_RDONLY);
+    if (file_fd < 0) {
+        perror("File not found");
+        exit(1);
+    }
+
+    printf("Server: File '%s' found. Transferring contents...\n", filename);
+
+    // Read file content
+    numBytes = read(file_fd, fileContent, sizeof(fileContent) - 1);
+    fileContent[numBytes] = '\0';
+
+    // Send file content to client via FIFO2
+    fd2 = open(FIFO2, O_WRONLY);
+    write(fd2, fileContent, strlen(fileContent));
+
+    printf("Server: File transfer completed.\n");
+
+    // Close all file descriptors
+    close(fd1);
+    close(fd2);
+    close(file_fd);
+
+    return 0;
+}
+
+
+
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#define FIFO1 "fifo1"
+#define FIFO2 "fifo2"
+
+int main() {
+    char filename[100], fileContent[3000];
+    int fd1, fd2;
+    ssize_t numBytes;
+
+    printf("Waiting for server...\n");
+
+    // Open FIFO1 for writing
+    fd1 = open(FIFO1, O_WRONLY);
+    if (fd1 == -1) {
+        perror("Error opening FIFO1");
+        exit(1);
+    }
+
+    // Get the filename from user
+    printf("SERVER ONLINE!\nEnter the filename: ");
+    fgets(filename, sizeof(filename), stdin);
+    filename[strcspn(filename, "\n")] = '\0'; // Remove newline character
+
+    // Send filename to server
+    write(fd1, filename, strlen(filename));
+
+    // Open FIFO2 for reading
+    fd2 = open(FIFO2, O_RDONLY);
+    if (fd2 == -1) {
+        perror("Error opening FIFO2");
+        exit(1);
+    }
+
+    // Read file contents from server
+    numBytes = read(fd2, fileContent, sizeof(fileContent) - 1);
+    fileContent[numBytes] = '\0';
+
+    printf("File received! Displaying contents:\n%s\n", fileContent);
+
+    // Close FIFOs
+    close(fd1);
+    close(fd2);
+
+    return 0;
+}
+7.txt (FIFO File Transfer)
+Client Input:
+
+bash
+Copy
+SERVER ONLINE!  
+Enter filename: data.txt  
+Server Output:
+
+bash
+Copy
+File 'data.txt' found. Transferring contents...  
+Client Output:
+
+bash
+Copy
+File received:  
+Hello, this is sample data.  
